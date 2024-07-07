@@ -1,69 +1,114 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Car Mapping Visualization</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/channel.js@1.0.0-alpha.2/dist/channel.min.js"></script>
-</head>
-<body>
-    <h1>Car Mapping Visualization</h1>
-    <div width="400px" height="400px">
-    <canvas id="carMappingCanvas" width="400px" height="400px"></canvas>
-    </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            let angleData = JSON.parse('{{ angle_data|escapejs }}');
-            let distanceData = JSON.parse('{{ distance_data|escapejs }}');
-        
-            let ctx = document.getElementById('carMappingCanvas').getContext('2d');
-            let scatterChart = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: 'Car Surroundings Mapping',
-                        data: angleData.map((angle, index) => ({
-                            x: angle,
-                            y: distanceData[index]
-                        })),
-                        backgroundColor: 'rgba(0, 123, 255, 0.5)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            type: 'linear',
-                            position: 'bottom',
-                            title: {
-                                display: true,
-                                text: 'Angle'
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Distance'
+    <!DOCTYPE html>
+    {% load static %}
+
+    <html>
+    <head>
+        <title>Car Mapping Visualization</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/channel.js@1.0.0-beta.1/dist/channel.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+    </head>
+    <body>
+        <h1>Car Mapping Visualization</h1>
+        <div width="400px" height="400px">
+            <canvas id="carMappingCanvas" width="400px" height="400px"></canvas>
+        </div>
+        <div class="battery-gauge">
+            <img src="{% static 'images/full-battery.png' %}" alt="Battery Icon" style="width: 100px; height: 80px; position: absolute; left: 10px; bottom: 10px;">        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', async () => {
+                let angleData = JSON.parse('{{ angle_data|escapejs }}');
+                let distanceData = JSON.parse('{{ distance_data|escapejs }}');
+
+                let ctx = document.getElementById('carMappingCanvas').getContext('2d');
+                let scatterChart = new Chart(ctx, {
+                    type:'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Car Surroundings Mapping',
+                            data: angleData.map((angle, index) => ({
+                                x: angle,
+                                y: distanceData[index]
+                            })),
+                            backgroundColor: 'rgba(0, 123, 255, 0.5)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: {
+                                    display: true,
+                                    text: 'Angle'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Distance'
+                                }
                             }
                         }
                     }
-                }
-            });
-
-            let channel = new Channel('/car_mapping');
-            channel.bind('car_mapping_update', async (data) => {
-                let jsonData = await JSON.parse(data);
-                let angle = jsonData.angle;
-                let distance = jsonData.distance;
-
-                scatterChart.data.datasets[0].data.push({
-                    x: angle,
-                    y: distance
                 });
 
-                scatterChart.update();
+                let channel = new Channel('/car_mapping');
+
+                channel.bind('car_mapping_update', async (data) => {
+                    let jsonData = await JSON.parse(data);
+                    let angle = jsonData.angle;
+                    let distance = jsonData.distance;
+
+                    scatterChart.data.datasets[0].data.push({
+                        x: angle,
+                        y: distance
+                    });
+                    {% comment %} updateBatteryGauge(); {% endcomment %}
+
+                    scatterChart.update();
+                });
+
             });
-        });
-    </script>
-</body>
-</html>
+            let batteryLevel = 100;
+let lastBatteryRange = 'full'; // Track the last battery range
+
+function updateBatteryGauge() {
+  let batteryGauge = document.querySelector('.battery-gauge');
+  let batteryImage = batteryGauge.querySelector('img');
+
+  let newBatteryRange;
+  if (batteryLevel <= 0) {
+    newBatteryRange = 'empty';
+  } else if (batteryLevel <= 20) {
+    newBatteryRange = 'low';
+  } else if (batteryLevel <= 50) {
+    newBatteryRange = 'half';
+  } else if (batteryLevel <= 75) {
+    newBatteryRange = 'battery';
+  } else {
+    newBatteryRange = 'full';
+  }
+
+  if (lastBatteryRange !== newBatteryRange) {
+    batteryImage.src = `{% static 'images/' %}${newBatteryRange}-battery.png`;
+
+    if (newBatteryRange === 'low') {
+      alert('Battery is low! Please plug in the charger');
+    }
+    else if  (newBatteryRange === 'empty') {
+        alert('Battery is dead! device will shutdown in 3 seconds');
+      }
+
+    lastBatteryRange = newBatteryRange;
+  }
+
+  batteryLevel -= 1;  // ممكن نقلل الرقم دا مثلا ل 0.1 او 0.5 او 0.3 عشان نخلي البطارية بتقل بمنطقية اكتر 
+}
+
+setInterval(updateBatteryGauge, 1000);
+        </script>
+    </body>
+    </html>

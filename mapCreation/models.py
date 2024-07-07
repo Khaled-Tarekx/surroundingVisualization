@@ -1,4 +1,5 @@
 from django.db import models
+
 class CarMapping(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     angle = models.IntegerField()
@@ -14,3 +15,4 @@ class EndpointUsage(models.Model):
 
     def __str__(self):
         return f"Room ID: {self.room_id}, Start Time: {self.start_time}"
+    
