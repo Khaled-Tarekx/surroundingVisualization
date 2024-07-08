@@ -1,16 +1,22 @@
-"""
-ASGI config for SurroundingVisualization project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.0/howto/deployment/asgi/
-"""
-
 import os
-
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'SurroundingVisualization.settings')
+django_asgi_app = get_asgi_application()
+from dotenv import load_dotenv
+from channels.routing import ProtocolTypeRouter, URLRouter
+from mapCreation.routing import websocket_urlpatterns
 
-application = get_asgi_application()
+load_dotenv()
+print(f"DJANGO_SETTINGS_MODULE: {os.environ.get('DJANGO_SETTINGS_MODULE')}")
+
+if os.environ.get('DEBUG') == 'True':
+    from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
+    static_urls = staticfiles_urlpatterns()
+    application = ProtocolTypeRouter({
+        'http': get_asgi_application(),
+        'websocket': URLRouter(
+            websocket_urlpatterns
+        ),
+        'static': static_urls,
+    })

@@ -4,12 +4,10 @@ from channels.db import database_sync_to_async
 from mapCreation.models import CarMapping
 
 
-
 class CarMappingConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         self.group_name = 'car_mapping'
         self.room_group_name = f'room_{self.scope["url_route"]["kwargs"]["room_id"]}'
-
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -55,7 +53,7 @@ class CarMappingConsumer(AsyncJsonWebsocketConsumer):
             await self.send_json({'error': str(e)})
 
     @staticmethod
-    def get_object_position(car_x, car_y, car_angle, distance, angle):
+    async def get_object_position(car_x, car_y, car_angle, distance, angle):
         total_angle = (car_angle + angle) % 360
         angle_rad = total_angle * (math.pi / 180)
         new_x = car_x + distance * math.cos(angle_rad)

@@ -5,7 +5,6 @@
     <head>
         <title>Car Mapping Visualization</title>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/channel.js@1.0.0-beta.1/dist/channel.min.js"></script>
         <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
     </head>
     <body>
@@ -15,8 +14,8 @@
         </div>
         <div class="battery-gauge">
             <img src="{% static 'images/full-battery.png' %}" alt="Battery Icon" style="width: 100px; height: 80px; position: absolute; left: 10px; bottom: 10px;">        </div>
-        <script>
-            document.addEventListener('DOMContentLoaded', async () => {
+            <script type="text/javascript">
+              document.addEventListener("DOMContentLoaded", function() {
                 let angleData = JSON.parse('{{ angle_data|escapejs }}');
                 let distanceData = JSON.parse('{{ distance_data|escapejs }}');
 
@@ -55,25 +54,34 @@
                     }
                 });
 
-                let channel = new Channel('/car_mapping');
-
-                channel.bind('car_mapping_update', async (data) => {
-                    let jsonData = await JSON.parse(data);
-                    let angle = jsonData.angle;
-                    let distance = jsonData.distance;
-
-                    scatterChart.data.datasets[0].data.push({
-                        x: angle,
-                        y: distance
-                    });
-                    {% comment %} updateBatteryGauge(); {% endcomment %}
-
-                    scatterChart.update();
-                });
-
+                const roomId = "{{ room_id }}";
+                const url = `ws://${window.location.host}/ws/car_mapping/${roomId}/`;
+                const mapSocket = new WebSocket(url);
+                
+                mapSocket.onopen = () => {
+                  console.log('WebSocket connection opened.');
+                };
+                
+                mapSocket.onmessage  = function(event) {
+                  const jsonData = JSON.parse(event.data);
+                  console.log(jsonData)
+                  if (jsonData.type === 'car_mapping_update') {
+                      const angle = jsonData.data.angle;
+                      const distance = jsonData.data.distance;
+  
+                      scatterChart.data.datasets[0].data.push({ x: angle, y: distance });
+                      scatterChart.update();
+                  }
+              };
+              mapSocket.onclose = () => {
+                console.log('WebSocket connection closed');
+              }
+              mapSocket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
             });
             let batteryLevel = 100;
-let lastBatteryRange = 'full'; // Track the last battery range
+            let lastBatteryRange = 'full';
 
 function updateBatteryGauge() {
   let batteryGauge = document.querySelector('.battery-gauge');

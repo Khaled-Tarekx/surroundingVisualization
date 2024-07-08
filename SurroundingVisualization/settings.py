@@ -28,15 +28,21 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
+
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             'hosts': [('127.0.0.1', 6379)],
+#         },
+#     },
+# }
+
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("localhost", 6379)],
-        },
-    },
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
 }
-
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR,'mapCreation', 'static'),
@@ -62,6 +68,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'mapCreation.cors_middleware.CorsMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -89,7 +96,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'SurroundingVisualization.wsgi.application'
-ASGI_APPLICATION = 'SurroundingVisualization.routing.application'
+ASGI_APPLICATION = 'SurroundingVisualization.asgi.application'
 
 
 # Database
@@ -137,7 +144,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

@@ -106,3 +106,6 @@ set DEMO_MODE = True
 
 # replace in the server_url  in servo file
 replace with real_endpoint (http://localhost:8000/car_mapping/12/)
+
+# to run the programa for real data testing use the uvicorn command in the terminal
+uvicorn SurroundingVisualization.asgi:application --port 8000
