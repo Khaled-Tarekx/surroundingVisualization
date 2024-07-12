@@ -1,0 +1,122 @@
+    {% comment %} <!DOCTYPE html>
+    {% load static %}
+
+    <html>
+    <head>
+        <title>Car Mapping Visualization</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+    </head>
+    <body>
+        <h1>Car Mapping Visualization</h1>
+        <div width="400px" height="400px">
+            <canvas id="carMappingCanvas" width="400px" height="400px"></canvas>
+        </div>
+        <div class="battery-gauge">
+            <img src="{% static 'images/full-battery.png' %}" alt="Battery Icon" style="width: 100px; height: 80px; position: absolute; left: 10px; bottom: 10px;">        </div>
+            <script type="text/javascript">
+              document.addEventListener("DOMContentLoaded", function() {
+                let angleData = JSON.parse('{{ angle_data|escapejs }}');
+                let distanceData = JSON.parse('{{ distance_data|escapejs }}');
+
+                let ctx = document.getElementById('carMappingCanvas').getContext('2d');
+                let scatterChart = new Chart(ctx, {
+                    type:'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Car Surroundings Mapping',
+                            data: angleData.map((angle, index) => ({
+                                x: angle,
+                                y: distanceData[index]
+                            })),
+                            backgroundColor: 'rgba(0, 123, 255, 0.5)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: {
+                                    display: true,
+                                    text: 'Angle'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Distance'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                const roomId = "{{ room_id }}";
+                const url = `ws://${window.location.host}/ws/car_mapping/${roomId}/`;
+                const mapSocket = new WebSocket(url);
+                
+                mapSocket.onopen = () => {
+                  console.log('WebSocket connection opened.');
+                };
+                
+                mapSocket.onmessage  = function(event) {
+                  const jsonData = JSON.parse(event.data);
+                  console.log(jsonData)
+                  if (jsonData.type === 'car_mapping_update') {
+                      const angle = jsonData.data.angle;
+                      const distance = jsonData.data.distance;
+  
+                      scatterChart.data.datasets[0].data.push({ x: angle, y: distance });
+                      scatterChart.update();
+                  }
+              };
+              mapSocket.onclose = () => {
+                console.log('WebSocket connection closed');
+              }
+              mapSocket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            });
+            let batteryLevel = 100;
+            let lastBatteryRange = 'full';
+
+function updateBatteryGauge() {
+  let batteryGauge = document.querySelector('.battery-gauge');
+  let batteryImage = batteryGauge.querySelector('img');
+
+  let newBatteryRange;
+  if (batteryLevel <= 0) {
+    newBatteryRange = 'empty';
+  } else if (batteryLevel <= 20) {
+    newBatteryRange = 'low';
+  } else if (batteryLevel <= 50) {
+    newBatteryRange = 'half';
+  } else if (batteryLevel <= 75) {
+    newBatteryRange = 'battery';
+  } else {
+    newBatteryRange = 'full';
+  }
+
+  if (lastBatteryRange !== newBatteryRange) {
+    batteryImage.src = `{% static 'images/' %}${newBatteryRange}-battery.png`;
+
+    if (newBatteryRange === 'low') {
+      alert('Battery is low! Please plug in the charger');
+    }
+    else if  (newBatteryRange === 'empty') {
+        alert('Battery is dead! device will shutdown in 3 seconds');
+      }
+
+    lastBatteryRange = newBatteryRange;
+  }
+
+  batteryLevel -= 1;  // ممكن نقلل الرقم دا مثلا ل 0.1 او 0.5 او 0.3 عشان نخلي البطارية بتقل بمنطقية اكتر 
+}
+
+setInterval(updateBatteryGauge, 1000);
+        </script>
+    </body>
+    </html> {% endcomment %}

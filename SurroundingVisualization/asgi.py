@@ -7,7 +7,6 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from mapCreation.routing import websocket_urlpatterns
 
 load_dotenv()
-print(f"DJANGO_SETTINGS_MODULE: {os.environ.get('DJANGO_SETTINGS_MODULE')}")
 
 if os.environ.get('DEBUG') == 'True':
     from django.contrib.staticfiles.urls import staticfiles_urlpatterns
